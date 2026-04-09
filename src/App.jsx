@@ -9,6 +9,7 @@ function App() {
   const [confidence, setConfidence] = useState(null);
   const [isPredicting, setIsPredicting] = useState(false);
   const [error, setError] = useState(null);
+  const [debugImage, setDebugImage] = useState(null);
 
   const handleClear = () => {
     if (canvasRef.current) {
@@ -16,6 +17,7 @@ function App() {
       setPrediction(null);
       setConfidence(null);
       setError(null);
+      setDebugImage(null);
     }
   };
 
@@ -31,24 +33,27 @@ function App() {
       // Process canvas to 28x28 grayscale array expected by the model
       const { array, dataUrl } = processCanvas(sourceCanvas);
 
-      // In a real scenario, you'd send `array` or `dataUrl` to your backend:
-      // const response = await fetch('/predict', {
-      //   method: 'POST',
-      //   headers: { 'Content-Type': 'application/json' },
-      //   body: JSON.stringify({ image_data: array })
-      // });
-      // const data = await response.json();
+      // Set debug image for visual verification
+      setDebugImage(dataUrl);
+
+      // Call the deployed MNIST API via Vite proxy to bypass CORS
+      const response = await fetch('/api/predict', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+          'Accept': 'application/json'
+        },
+        body: JSON.stringify(array)
+      });
       
-      // --- MOCK RESPONSE LOGIC ---
-      // Simulating network delay and random digit prediction
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      if (!response.ok) {
+        throw new Error(`API error: ${response.status}`);
+      }
       
-      const mockDigit = Math.floor(Math.random() * 10);
-      const mockConfidence = (0.75 + Math.random() * 0.24).toFixed(2); // 75% to 99%
+      const data = await response.json();
       
-      setPrediction(mockDigit);
-      setConfidence((mockConfidence * 100).toFixed(0));
-      // ---------------------------
+      setPrediction(data.prediction);
+      setConfidence(null); // API doesn't return confidence currently
 
     } catch (err) {
       console.error(err);
@@ -105,12 +110,26 @@ function App() {
           <>
             <span className="text-muted">Prediction</span>
             <div className="prediction-digit">{prediction}</div>
-            <div className="prediction-confidence">{confidence}% Confidence</div>
+            {confidence !== null && (
+              <div className="prediction-confidence">{confidence}% Confidence</div>
+            )}
           </>
         ) : (
           <p className="text-muted">Prediction result will appear here</p>
         )}
       </section>
+
+      {/* Visual Debug: 28x28 processed image */}
+      {debugImage && (
+        <section className="debug-preview">
+          <span className="text-muted">Processed 28×28 Input</span>
+          <img
+            src={debugImage}
+            alt="28x28 processed input"
+            className="debug-image"
+          />
+        </section>
+      )}
     </div>
   );
 }

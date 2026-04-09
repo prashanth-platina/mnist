@@ -33,8 +33,13 @@ const DrawingCanvas = forwardRef((props, ref) => {
       const canvas = canvasRef.current;
       if (!canvas) return;
       const ctx = canvas.getContext('2d');
-      ctx.fillStyle = 'black';
+      ctx.fillStyle = '#000000';
       ctx.fillRect(0, 0, canvas.width, canvas.height);
+      // Restore drawing styles after clearing
+      ctx.strokeStyle = '#FFFFFF';
+      ctx.lineWidth = 18;
+      ctx.lineCap = 'round';
+      ctx.lineJoin = 'round';
     },
     getCanvas: () => {
       return canvasRef.current;
